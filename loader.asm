@@ -77,15 +77,32 @@ SetA20LineDone:
     XOR ax, ax
     MOV es, ax
 
-    ; Print a message 
-    MOV ah, 0x13
-    MOV al, 1
-    MOV bx, 0xa
-    XOR dx, dx
-    MOV bp, Message
-    MOV cx, MessageLen 
+SetVideoMode:
+    MOV ax, 3
     INT 0x10
 
+; We are going to print on screen 80x25 
+; 80 chars (horizontally) 
+; 25 lines (vertically)
+; Every char has 2 bytes: 
+; [ASCII as first byte]
+; [Background: Foreground] - attributes in the 2nd byte
+;
+
+    MOV si, Message
+    MOV ax, 0xB800
+    MOV es, ax
+    XOR di, di
+    MOV cx, MessageLen
+
+PrintMessage:
+    MOV al, [si]
+    MOV [es:di], al
+    MOV byte[es: di + 1], 0xA
+    
+    ADD di, 2
+    ADD si, 1
+    loop PrintMessage
 
 ReadError:
 NoSupport:
@@ -96,7 +113,7 @@ End:
 
 ;; Variables 
 DriveId:    DB 0
-Message:    DB "A20 line is enabled"
+Message:    DB "Text mode is set"
 MessageLen: equ $-Message
 
 NoSupportMessage:    DB "long mode is not supported"
