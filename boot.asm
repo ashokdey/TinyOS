@@ -72,12 +72,12 @@ ReadPacket: times 16 DB 0
 
 times (0x1be - ($ - $$)) DB 0
 
-    DB 80h                      ;boot indicator 
-    DB 0,2,0                    ;set starting CHS (Cylinder, Height, Sector)
-    DB 0f0h                     ;type 
-    DB 0ffh, 0ffh, 0ffh         ;ending CHS 
-    DD 1                        ;starting sector 
-    DD (20 * 16 * 63 - 1)       ;size 
+    DB 80h                          ;boot indicator 
+    DB 0,2,0                        ;set starting CHS (Cylinder, Height, Sector)
+    DB 0f0h                         ;type 
+    DB 0ffh, 0ffh, 0ffh             ;ending CHS 
+    DD 1                            ;starting sector 
+    DD (20 * 16 * 63 - 1)           ;size 
 
 
     times(16 * 3) DB 0 

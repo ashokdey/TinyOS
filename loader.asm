@@ -30,6 +30,27 @@ LoadKernel:
     INT 0x13
     JC  ReadError
 
+TryGetMemInfo:
+    MOV eax, 0xe820
+    MOV edx, 0x534d4150
+    MOV ecx, 20
+    MOV edi, 0x9000
+    XOR ebx, ebx
+    INT 0x15 
+    JC NoSupport
+
+GetMemInfo:
+    ADD edi, 20
+    MOV eax, 0xe820
+    MOV edx, 0x534d4150
+    MOV ecx, 20  
+    INT 0x15 
+    JC GetMemInfoDone
+
+    TEST ebx, ebx
+    JNZ GetMemInfo
+
+GetMemInfoDone:
     MOV ah, 0x13
     MOV al, 1
     MOV bx, 0xa
@@ -47,7 +68,7 @@ End:
 
 ;; Variables 
 DriveId:    DB 0
-Message:    DB "kernel is loaded"
+Message:    DB "Got the memory info"
 MessageLen: equ $-Message
 
 NoSupportMessage:    DB "long mode is not supported"
