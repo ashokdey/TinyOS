@@ -15,7 +15,7 @@ start:              ;label to indicate the start of the code and we are initiali
 ;; Because we need to load our kernel from disk to the memory and jump to the kernel
 
 TestDiskExtension:
-    mov [DriveId], dl       ;move to the 0 location using the value stored in variable
+    mov [DriveId], dl    ;move to the 0 location using the value stored in variable
     mov ah, 0x41
     mov bx, 0x55aa
     int 0x13            ;call the interupt if the device is not supported
@@ -23,7 +23,23 @@ TestDiskExtension:
     cmp bx, 0xaa55      ;if bx is not eq to give n value, jump to NoSupport  
     jne NoSupport       ;jne (jump if not euqal)
 
-PrintMessage:
+LoadLoader:
+    mov si,ReadPacket
+    mov word[si ],0x10
+    mov word[si + 2],5
+    mov word[si + 4],0x7e00
+    mov word[si + 6],0
+    mov dword[si + 8],1
+    mov dword[si + 0xc],0
+    mov dl,[DriveId]
+    mov ah,0x42
+    int 0x13
+    jc  ReadError
+
+    mov dl,[DriveId]
+    jmp 0x7e00 
+
+ReadError:
     mov ah,0x13 
     mov al,1
     mov bx,0xa          ;color green to print 
@@ -32,17 +48,27 @@ PrintMessage:
     mov cx,MessageLen   ;length of chars to print 
     int 0x10
 
-NoSupport:      ;will be similar to jumping at the end 
+NoSupport:
+    mov ah,0x13 
+    mov al,1
+    mov bx,0xa          ;color green to print 
+    xor dx,dx
+    mov bp,NoSupportMessage      ;address of string to print 
+    mov cx,NoSupportMessageLen   ;length of chars to print 
+    int 0x10    
+
 End:
     hlt
     jmp End
 
-
 ;; Variables 
-DriveId: db 0
-Message: db "Disk extension is supported"
-MessageLen: equ $-Message
+NoSupportMessage: db "Drive extension not supported"
+NoSupportMessageLen: equ $-NoSupportMessage
 
+DriveId: db 0
+Message: db "Eror occured in boot process"
+MessageLen: equ $-Message
+ReadPacket: times 16 db 0
 
 times (0x1be - ($ - $$)) db 0
 
