@@ -119,18 +119,55 @@ PMEntry:
     MOV ss, ax                  ; SS register initialization
     MOV esp, 0x7C00             ; Setting the stack pointer to the base mem address
 
-    MOV byte[0xB8000],'P'       ; To see actually we are in the protected mode, let's print `P`
-    MOV byte[0xB8001],0xA       ; second byte for the attribute of the character
+    ; setting up paging 
+    ; the address (0x80000 to 0x90000) may be used for 
+    ; BIOS data. So we can use the address space 
+    ; 0x70000 to 0x80000
+    CLD
+    MOV edi, 0x70000
+    XOR eax, eax                ; clear eax
+    MOV ecx, 0x10000/4
+    REP stosd
+    
+    MOV dword[0x70000],0x71007
+    MOV dword[0x71000],10000111B
+
+    LGDT [Gdt64Ptr]
+
+    MOV eax, cr4
+    OR  eax, (1<<5)
+    MOV cr4, eax
+
+    MOV eax, 0x70000
+    MOV cr3, eax
+
+    MOV ecx, 0xc0000080
+    RDMSR
+    OR eax, (1<<8)
+    WRMSR
+
+    MOV eax, cr0
+    OR  eax, (1<<31)
+    MOV cr0, eax
+
+    JMP 8:LMEntry
 
 ; This is the traditional infinite loop
 PEnd:
     HLT
     JMP PEnd
-    
 
+; We are using directive to signify that it's 32 bit code 
+[BITS 64]
+LMEntry:
+    MOV rsp, 0x7C00
 
+    MOV byte[0xB8000],'L'       ; print L on screen to signify we are into the long mode (64-bit mode)
+    MOV byte[0xB8001],0xa       ; the attribute for the char of the ASCII char `L`
 
-
+LEnd:
+    HLT
+    JMP LEnd
 
 ;; Variables 
 DriveId:    DB 0
@@ -168,3 +205,13 @@ Gdt32Ptr: dw Gdt32Len-1
 ; For now will are keeping it 0 
 Idt32Ptr: dw 0
           dd 0
+
+Gdt64:
+    dq 0
+    dq 0x0020980000000000
+
+Gdt64Len: equ $-Gdt64
+
+
+Gdt64Ptr: dw Gdt64Len-1
+          dd Gdt64
