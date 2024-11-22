@@ -1,7 +1,6 @@
 [BITS 16]
 [ORG 0x7e00]
 
-
 start:
     MOV [DriveId],dl
 
@@ -51,6 +50,34 @@ GetMemInfo:
     JNZ GetMemInfo
 
 GetMemInfoDone:
+; Test for A20
+
+;The A20, or address line 20, is one of the 
+;electrical lines that make up the system 
+;bus of an x86-based computer system. 
+;
+;The A20 line in particular is used to transmit the 
+;21st bit on the address bus. The high memory area 
+;is only available in real mode on 80286 processors 
+;if the A20 gate is enabled.
+;
+
+TestA20:
+    MOV ax, 0xFFFF
+    MOV es, ax 
+    MOV WORD[DS: 0x7C00], 0xA200
+    CMP WORD[ES: 0x7C10], 0xA200
+    JNE SetA20LineDone
+
+    MOV WORD[0x7C00], 0xB200
+    CMP WORD[ES:0x7C10], 0xB200
+    JE End
+
+SetA20LineDone:
+    XOR ax, ax
+    MOV es, ax
+
+    ; Print a message 
     MOV ah, 0x13
     MOV al, 1
     MOV bx, 0xa
@@ -58,6 +85,7 @@ GetMemInfoDone:
     MOV bp, Message
     MOV cx, MessageLen 
     INT 0x10
+
 
 ReadError:
 NoSupport:
@@ -68,7 +96,7 @@ End:
 
 ;; Variables 
 DriveId:    DB 0
-Message:    DB "Got the memory info"
+Message:    DB "A20 line is enabled"
 MessageLen: equ $-Message
 
 NoSupportMessage:    DB "long mode is not supported"

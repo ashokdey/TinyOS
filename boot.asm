@@ -79,7 +79,6 @@ times (0x1be - ($ - $$)) DB 0
     DD 1                            ;starting sector 
     DD (20 * 16 * 63 - 1)           ;size 
 
-
     times(16 * 3) DB 0 
 
     DB 0x55 
