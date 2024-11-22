@@ -89,33 +89,82 @@ SetVideoMode:
 ; [Background: Foreground] - attributes in the 2nd byte
 ;
 
-    MOV si, Message
-    MOV ax, 0xB800
-    MOV es, ax
-    XOR di, di
-    MOV cx, MessageLen
+; Loading the descriptor tables: GDT and IDT 
+    CLI                             ; clear the interupts 
+    LGDT [Gdt32Ptr]
+    LIDT [Idt32Ptr]
 
-PrintMessage:
-    MOV al, [si]
-    MOV [es:di], al
-    MOV byte[es: di + 1], 0xA
-    
-    ADD di, 2
-    ADD si, 1
-    loop PrintMessage
+    ; enabling the protected mode 
+    MOV eax, cr0
+    OR  eax, 1
+    MOV cr0, eax
 
+    ; loading Code Segment Descriptor via JMP 
+    ; also we have to seek to 8 byets away from GDT 
+    JMP 8:PMEntry
+
+; This block will be used before we try to get into the protected mode
 ReadError:
 NoSupport:
 End:
     HLT 
     JMP End
 
+; We are using directive to signify that it's 32 bit code 
+[BITS 32]
+PMEntry:
+    MOV ax, 0x10                ; TS register initialization
+    MOV ds, ax                  ; DS register initialization
+    MOV es, ax                  ; ES register initialization
+    MOV ss, ax                  ; SS register initialization
+    MOV esp, 0x7C00             ; Setting the stack pointer to the base mem address
+
+    MOV byte[0xB8000],'P'       ; To see actually we are in the protected mode, let's print `P`
+    MOV byte[0xB8001],0xA       ; second byte for the attribute of the character
+
+; This is the traditional infinite loop
+PEnd:
+    HLT
+    JMP PEnd
+    
+
+
+
+
 
 ;; Variables 
 DriveId:    DB 0
-Message:    DB "Text mode is set"
-MessageLen: equ $-Message
-
-NoSupportMessage:    DB "long mode is not supported"
-NoSupportMessageLen: equ $-NoSupportMessage
 ReadPacket: times 16 DB 0
+
+; Defining the GDT 
+; ----------------
+; The Global Descriptor Table (GDT) is a binary data structure 
+; that is used by  processors to define memory segments.
+
+Gdt32:
+    dq 0
+Code32:
+    dw 0xffff
+    dw 0
+    db 0
+    db 0x9a
+    db 0xcf
+    db 0
+Data32:
+    dw 0xffff
+    dw 0
+    db 0
+    db 0x92
+    db 0xcf
+    db 0
+    
+Gdt32Len: equ $-Gdt32
+
+Gdt32Ptr: dw Gdt32Len-1
+          dd Gdt32
+
+; Interupt Descriptor Table
+; -------------------------
+; For now will are keeping it 0 
+Idt32Ptr: dw 0
+          dd 0
