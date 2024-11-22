@@ -11,6 +11,18 @@ start:              ;label to indicate the start of the code and we are initiali
     mov ss,ax       ;set to 0
     mov sp, 0x7c00  ;point the stack pointer to 
 
+;; Add disk extension service 
+;; Because we need to load our kernel from disk to the memory and jump to the kernel
+
+TestDiskExtension:
+    mov [DriveId], dl       ;move to the 0 location using the value stored in variable
+    mov ah, 0x41
+    mov bx, 0x55aa
+    int 0x13            ;call the interupt if the device is not supported
+    jc NoSupport        ;the inerupt will make it to jum to label NoSupport
+    cmp bx, 0xaa55      ;if bx is not eq to give n value, jump to NoSupport  
+    jne NoSupport       ;jne (jump if not euqal)
+
 PrintMessage:
     mov ah,0x13 
     mov al,1
@@ -20,12 +32,15 @@ PrintMessage:
     mov cx,MessageLen   ;length of chars to print 
     int 0x10
 
-
+NoSupport:      ;will be similar to jumping at the end 
 End:
     hlt
     jmp End
 
-Message: db "Hello"
+
+;; Variables 
+DriveId: db 0
+Message: db "Disk extension is supported"
 MessageLen: equ $-Message
 
 
